@@ -1,0 +1,45 @@
+# Генерация второй независимой выборки Y
+Y = np.random.rayleigh(scale=sigma, size=n)
+
+# 3. Выборочный коэффициент корреляции Пирсона
+corr_coef = np.corrcoef(X, Y)[0,1]
+print(f"Коэффициент корреляции r = {corr_coef:.4f}")
+
+# 4. Статистика T для проверки H0: ρ=0
+T_stat = corr_coef * np.sqrt((n-2) / (1 - corr_coef**2))
+print(f"Статистика T = {T_stat:.4f}")
+
+# 5. Критические значения по распределению Стьюдента с n-2 степенями свободы
+df_t = n - 2
+t_crit = {alpha: stats.t.ppf(1 - alpha/2, df_t) for alpha in alpha_levels}
+print("\nКритические значения |t| для двусторонней проверки:")
+for alpha, crit in t_crit.items():
+    print(f"  α = {alpha}: t_crit = {crit:.4f}")
+
+# 6. Вывод о гипотезе H0
+print("\nРезультаты проверки гипотезы о равенстве нулю коэффициента корреляции:")
+for alpha, crit in t_crit.items():
+    if abs(T_stat) >= crit:
+        decision = "отвергаем H0 (корреляция значима)"
+    else:
+        decision = "принимаем H0 (корреляция незначима)"
+    print(f"  α = {alpha}: |T| = {abs(T_stat):.4f} ≥ {crit:.4f} ? {abs(T_stat) >= crit} → {decision}")
+
+# Параметры шума
+noise_scales = [0.001, 100, 1000]
+
+for scale_noise in noise_scales:
+    print(f"\n--- Шум: N(0, {scale_noise}) ---")
+    b = np.random.normal(0, scale_noise, n)
+    Y_dep = 2 * X + b
+    
+    corr = np.corrcoef(X, Y_dep)[0,1]
+    T = corr * np.sqrt((n-2) / (1 - corr**2))
+    print(f"  r = {corr:.6f}, T = {T:.4f}")
+    
+    for alpha in alpha_levels:
+        crit = stats.t.ppf(1 - alpha/2, df_t)
+        if abs(T) >= crit:
+            print(f"    α = {alpha}: |T| ≥ {crit:.4f} → H0 отвергается (корреляция значима)")
+        else:
+            print(f"    α = {alpha}: |T| < {crit:.4f} → H0 принимается (корреляция незначима)")
